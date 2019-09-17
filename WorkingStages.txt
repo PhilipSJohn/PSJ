@@ -1,0 +1,23 @@
+1. Build KSDS dataset with all the information.
+    Record
+       REC.                  
+		05 PET-ID PIC 999.    
+		05 PET-TYPE PIC 9.    
+		05 BREED PIC A(10).   
+		05 DOP PIC 9(6).      
+		05 COST PIC 9999V99.  
+		05 QUANT PIC 99.      
+		05 FILLER PIC X(11).
+		
+2. Pet Sales transaction.
+   a) Display the pet-id and cost											
+   b) Changes cost for different seasons (REMOVED by customer)
+   c) Accept input: quantity ( 1 then multiple)
+   d) Send to the ps file for storing(Do this step in all).           
+   
+3. Build processed sales
+   a) Access ps data and for cost and id
+   b) if quantity not available then send to unproccessed.
+   c) if there change the ksds data and make updates
+   d) store the transaction in an esds dataset
+   d) display quantity profit/loss sheet
