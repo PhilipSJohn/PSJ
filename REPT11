@@ -1,0 +1,171 @@
+       ID DIVISION.                                                     00010000
+       PROGRAM-ID. REPT.                                                00020000
+       ENVIRONMENT DIVISION.                                            00030000
+       INPUT-OUTPUT SECTION.                                            00040001
+       FILE-CONTROL.                                                    00050011
+              SELECT PETMASTER ASSIGN TO KSDS                           00051020
+              ORGANIZATION IS INDEXED                                   00053020
+              ACCESS MODE IS DYNAMIC                                    00054022
+              RECORD KEY IS FS-PETID OF PETMASTER                       00055038
+              FILE STATUS IS FS.                                        00056031
+              SELECT INFILE ASSIGN TO AS-ESDS                           00060099
+              ORGANIZATION IS SEQUENTIAL                                00080002
+              ACCESS MODE IS SEQUENTIAL                                 00090032
+              FILE STATUS IS FS1.                                       00091032
+              SELECT OUTFILE ASSIGN TO PS1                              00100099
+              FILE STATUS IS FS2.                                       00110002
+       DATA DIVISION.                                                   00120002
+       FILE SECTION.                                                    00130002
+       FD PETMASTER.                                                    00131021
+       01 MSTREC.                                                       00132031
+           05 FS-PETID      PIC X(3).                                   00132131
+           05 FS-PET-TYPE   PIC 9.                                      00132367
+           05 FS-BREED      PIC X(10).                                  00134693
+           05 FS-DATEPUR    PIC 9(6).                                   00134721
+           05 FS-COSTPR     PIC 9999V99.                                00134899
+           05 FS-QUANTIT    PIC 9(2).                                   00134921
+           05               PIC X(12).                                  00135099
+       FD INFILE.                                                       00140002
+       01 PROCREC.                                                      00150031
+              05 FS-PETID    PIC X(3).                                  00160002
+              05 FS-DATEPUR  PIC 9(6).                                  00200002
+              05 FS-QUANTITY PIC 99.                                    00210099
+              05 FS-PRICE    PIC 9(4)V9(2).                             00220002
+              05 FS-PROFIT   PIC S9(4)V9(2).                            00260039
+              05             PIC X(17).                                 00270099
+       FD OUTFILE.                                                      00280002
+       01 OUTREC             PIC X(80).                                 00290039
+       WORKING-STORAGE SECTION.                                         00300002
+       01 HEAD  PIC X(80) VALUE "PET-ID  BREED        DATEPUR    PRICE  00310086
+      -                             "QUANTITY  PROFIT ".                00320059
+       01 DATE11.                                                       00320199
+          05 Y1 PIC 99.                                                 00320299
+          05 H1 PIC 99.                                                 00320399
+          05 T11 PIC 99.                                                00320499
+       01 DATE1.                                                        00321007
+          05                 PIC X(60).                                 00322029
+          05 D.                                                         00323099
+             10 Y            PIC 99.                                    00324099
+             10 V1           PIC X VALUE '/'.                           00324199
+             10 H            PIC 99.                                    00325099
+             10 V2           PIC X VALUE '/'.                           00325199
+             10 T1           PIC 99.                                    00326099
+       01 WS-PAGE.                                                      00340002
+          05                 PIC X(60).                                 00350005
+          05 PG              PIC X(10) VALUE "PAGE-NO:".                00370002
+          05 WS-PG           PIC 99 VALUE 1.                            00380098
+       77 FS                 PIC 99.                                    00381023
+       77 FS1                PIC 99.                                    00390002
+       77 FS2                PIC 99.                                    00400002
+       77 WS-PET             PIC 9     VALUE 0.                         00401091
+       01 WS-DET.                                                       00410002
+              05             PIC XX VALUE SPACES.                       00420039
+              05 WS-PETID    PIC X(3).                                  00430003
+              05             PIC X(4)  VALUE SPACES.                    00440039
+              05 WS-BREED    PIC X(10).                                 00450003
+              05             PIC X(4) VALUE SPACES.                     00460039
+              05 WS-DATEPUR  PIC 9(6).                                  00470003
+              05             PIC X(4)  VALUE SPACES.                    00480039
+              05 WS-PRICE    PIC 9(4)V9(2).                             00490003
+              05             PIC X(4)   VALUE SPACES.                   00500039
+              05 WS-QUANTITY PIC 99.                                    00510003
+              05             PIC X(4)  VALUE SPACES.                    00520039
+              05 WS-PROFIT   PIC 9(4)V9(2).                             00530003
+              05             PIC X(4)  VALUE SPACES.                    00531039
+              05 WS-PET-TYPE    PIC 9.                                  00532045
+         01 WS-PTYPE.                                                   00533044
+              05 T           PIC X(10)  VALUE 'PET TYPE: '.             00534099
+              05 WS-P        PIC X(5)   VALUE SPACES.                   00535089
+         01 WS-TOT.                                                     00536044
+            05               PIC X(12)  VALUE 'TOTAL QTY: '.            00537099
+            05 WS-TOT-QTY    PIC 999.                                   00538044
+         01 WS-PRO.                                                     00538178
+            05               PIC X(15) VALUE 'TOTAL PTOFIT: '.          00538299
+            05 WS-TOT-TMP    PIC -9(4).99.                              00538399
+         01 WS-FLG           PIC 9      VALUE 0.                        00539044
+         01 WS-LINE          PIC X(80)  VALUE ALL "-".                  00541043
+         77 WS-LCTR          PIC 99    VALUE 1.                         00550003
+         77 TEMP             PIC 99.                                    00551099
+         77 WS-TOT-PRO    PIC S9999V99 VALUE 0.                         00552099
+         PROCEDURE DIVISION.                                            00560003
+         MAIN-PARA.                                                     00570003
+              PERFORM OPEN-PARA                                         00580003
+              PERFORM READ-INPUT UNTIL FS1 NOT = 0                      00600035
+              PERFORM SUMMARY-PARA                                      00601097
+              CLOSE   INFILE OUTFILE                                    00610003
+              CLOSE PETMASTER                                           00611021
+              EXIT PROGRAM.                                             00620099
+         CNTRL-BREAK.                                                   00630003
+               IF WS-FLG = 1                                            00630160
+                 PERFORM SUMMARY-PARA                                   00630260
+              END-IF                                                    00630360
+              MOVE 1 TO WS-FLG                                          00630444
+              WRITE OUTREC FROM WS-PAGE                                 00630744
+              EVALUATE TRUE                                             00630844
+                    WHEN FS-PET-TYPE = '1'                              00630993
+                      MOVE 'CAT' TO WS-P                                00631087
+                    WHEN FS-PET-TYPE = '2'                              00631293
+                      MOVE 'DOG' TO WS-P                                00631487
+                    WHEN FS-PET-TYPE = '3'                              00631593
+                      MOVE 'BIRD' TO WS-P                               00631787
+                    WHEN FS-PET-TYPE = '4'                              00631893
+                      MOVE 'FISH' TO WS-P                               00632087
+              END-EVALUATE                                              00632144
+              ACCEPT DATE11 FROM DATE                                   00633099
+              PERFORM REVERSE                                           00634099
+      *       WRITE OUTREC FROM WS-PAGE                                 00640060
+              WRITE OUTREC FROM DATE1                                   00640114
+              WRITE OUTREC FROM WS-PTYPE                                00640272
+              WRITE OUTREC FROM HEAD                                    00650063
+              WRITE OUTREC FROM WS-LINE                                 00660094
+              MOVE 0 TO WS-TOT-TMP                                      00661099
+              MOVE 0 TO WS-TOT-QTY                                      00662097
+              ADD 1 TO WS-PG.                                           00670003
+              MOVE 0 TO WS-LCTR.                                        00680003
+         READ-INPUT.                                                    00690003
+              DISPLAY 'ENTER READ PARA'                                 00691032
+              READ INFILE                                               00692036
+                  NOT AT END                                            00692190
+                 MOVE FS-PETID OF PROCREC TO FS-PETID OF MSTREC         00693089
+                 READ PETMASTER                                         00694089
+                 KEY IS FS-PETID OF PETMASTER                           00695089
+                    NOT INVALID KEY                                     00696090
+                        DISPLAY 'PET TYPE ' FS-PET-TYPE WS-PET          00697091
+                   IF FS-PET-TYPE NOT = WS-PET                          00700385
+                        PERFORM CNTRL-BREAK                             00700444
+                   END-IF                                               00700644
+                 DISPLAY 'REC READ:' PROCREC                            00700732
+                      DISPLAY 'KSDS:' MSTREC                            00712031
+                      DISPLAY 'ESDS:' PROCREC                           00713031
+                      MOVE FS-PET-TYPE TO WS-PET                        00713185
+                      MOVE FS-BREED OF MSTREC TO WS-BREED               00714037
+                      END-READ                                          00715037
+                      MOVE FS-PETID OF PROCREC TO WS-PETID              00720031
+                      MOVE FS-DATEPUR OF PROCREC TO WS-DATEPUR          00740031
+                      MOVE FS-PRICE OF PROCREC TO WS-PRICE              00750031
+                      MOVE FS-QUANTITY OF PROCREC TO WS-QUANTITY        00760031
+                      ADD FS-QUANTITY OF PROCREC TO WS-TOT-QTY          00760175
+                      MOVE FS-PROFIT OF PROCREC TO WS-PROFIT            00760275
+                      ADD  FS-PROFIT OF PROCREC TO WS-TOT-PRO           00761099
+                      MOVE WS-TOT-PRO TO WS-TOT-TMP                     00762099
+                      DISPLAY "TMP:" WS-TOT-TMP "PRO" WS-TOT-PRO        00763099
+                      MOVE FS-PROFIT  OF PROCREC  TO WS-PROFIT          00770031
+                      WRITE OUTREC    FROM WS-DET                       00780031
+               END-READ                                                 00830095
+               DISPLAY 'READ STS:' FS1.                                 00831032
+          OPEN-PARA.                                                    00840003
+                      OPEN INPUT INFILE                                 00850003
+                      OPEN INPUT PETMASTER                              00851021
+                      OPEN OUTPUT OUTFILE                               00860003
+                        DISPLAY "OPEN STATUS" FS " " FS1 " " FS2.       00870031
+          SUMMARY-PARA.                                                 00880060
+                    WRITE OUTREC FROM WS-TOT                            00890060
+                    MOVE SPACES TO OUTREC                               00900060
+                    WRITE OUTREC FROM WS-PRO                            00901079
+                    MOVE SPACES TO OUTREC                               00902079
+                    WRITE OUTREC                                        00910099
+                    MOVE ZERO TO WS-TOT-PRO.                            00911099
+          REVERSE.                                                      00920099
+                    MOVE Y1 TO T1                                       00930099
+                    MOVE T11 TO Y                                       00940099
+                    MOVE H1 TO H.                                       00950099

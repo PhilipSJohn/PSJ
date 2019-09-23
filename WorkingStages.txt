@@ -1,4 +1,5 @@
 1. Build KSDS dataset with all the information.
+(Record Length = 40)
     Record
        REC.                  
 		05 PET-ID PIC 999.    
@@ -13,11 +14,18 @@
    a) Display the pet-id and cost											
    b) Changes cost for different seasons (REMOVED by customer)
    c) Accept input: quantity ( 1 then multiple)
-   d) Send to the ps file for storing(Do this step in all).           
+   d) Send to the ps file for storing(Record Length = 40).   
+Record
+       REC.                  
+		05 PET-ID PIC 999.     
+		05 COST PIC 9999V99.  
+		05 QUANT PIC 99.      
+		05 FILLER PIC X(29).        
    
 3. Build processed sales
    a) Access ps data and for cost and id
    b) if quantity not available then send to unproccessed.
    c) if there change the ksds data and make updates
-   d) store the transaction in an esds dataset
-   d) display quantity profit/loss sheet
+   d) store the transaction in an esds dataset(Record Length = 40)
+   d) display quantity profit/loss sheet(Record Length = 80)
+      - SHOW profit/loss with -ve sign if loss with decimal points

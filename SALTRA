@@ -1,0 +1,215 @@
+       ID DIVISION.                                                     00010000
+       PROGRAM-ID. SALTRA.                                              00020000
+                                                                        00030000
+       ENVIRONMENT DIVISION.                                            00040000
+       INPUT-OUTPUT SECTION.                                            00050000
+       FILE-CONTROL.                                                    00060000
+             SELECT SALE-TRANS ASSIGN TO PS                             00070088
+             FILE STATUS IS WS-FS2.                                     00070144
+             SELECT UNPROCFILE ASSIGN TO UPP                            00070288
+             FILE STATUS IS WS-FS3.                                     00070358
+             SELECT PROCFILE ASSIGN TO AS-ESDS                          00070488
+             ORGANIZATION IS SEQUENTIAL                                 00070585
+             ACCESS MODE IS SEQUENTIAL                                  00070685
+             FILE STATUS IS WS-FS4.                                     00070777
+             SELECT MASTERFL ASSIGN TO KSDS                             00071088
+             ORGANIZATION IS INDEXED                                    00080000
+             ACCESS MODE IS DYNAMIC                                     00090000
+             RECORD KEY IS PET-ID OF MASTERFL                           00091088
+             FILE STATUS IS WS-FS1.                                     00092044
+                                                                        00093000
+       DATA DIVISION.                                                   00094000
+       FILE SECTION.                                                    00095000
+      *RECORD OF KSDS FILE                                              00095199
+       FD MASTERFL.                                                     00096088
+       01 REC1.                                                         00097036
+          05 PET-ID   PIC 999.                                          00098099
+          05 PET-TYPE PIC 9.                                            00099000
+          05 BREED    PIC X(10).                                        00100099
+          05 DOP      PIC 9(6).                                         00110099
+          05 COST     PIC 9999V99.                                      00120099
+          05 QUANT    PIC 99.                                           00130099
+          05          PIC X(12).                                        00140099
+      *RECORD OF SALE TRANSACTION FILE                                  00140199
+       FD SALE-TRANS.                                                   00141088
+       COPY COPYREC.                                                    00141199
+      *01 REC2.                                                         00142099
+      *   05 PID   PIC 999.                                             00143099
+      *   05 COS   PIC 9999V99.                                         00147099
+      *   05 QUAN  PIC 99.                                              00148099
+      *   05       PIC X(29).                                           00149099
+      *RECORD OF UNPROCESSED TRANSACTION FILE                           00149199
+       FD UNPROCFILE.                                                   00149288
+       01 OTREC    PIC X(40).                                           00149399
+      *RECORD OF PROCESSED TRANSACTION FILE                             00149499
+       FD PROCFILE.                                                     00150888
+       01 REC3.                                                         00150979
+          05 PEID PIC 999.                                              00151079
+          05 DO   PIC 9(6).                                             00151199
+          05 QUA  PIC 99.                                               00151299
+          05 TP   PIC 9999V99.                                          00151399
+          05 PL   PIC S9999V99.                                         00151499
+          05      PIC X(17).                                            00151599
+                                                                        00151660
+       WORKING-STORAGE SECTION.                                         00152000
+      *TEMPORARY RECORD TO COPY INTO UNPROCESSED FILE                   00152199
+       01 NM.                                                           00153099
+          05 I1 PIC 999.                                                00158099
+          05    PIC X(2).                                               00159099
+          05 C1 PIC 9999V99.                                            00159399
+          05    PIC X(3).                                               00159499
+          05 Q1 PIC 99.                                                 00159799
+          05    PIC X(4).                                               00159899
+          05 N1 PIC A(20).                                              00159999
+       01 HD    PIC X(40) VALUE "ID   COST    QUANT  REASON".           00161099
+       01 LINE1 PIC X(40) VALUE ALL '-'.                                00162099
+       77 WS-FS1  PIC 99.                                               00168036
+       77 WS-FS2  PIC 99.                                               00168136
+       77 WS-FS3  PIC 99.                                               00168259
+       77 WS-FS4  PIC 99.                                               00168378
+       77 JK      PIC 99.                                               00168499
+       77 N       PIC 9999V99.                                          00169099
+       77 X       PIC S9999V99.                                         00169199
+       77 M       PIC 99.                                               00169299
+       77 V1      PIC 99.                                               00169399
+       77 V2      PIC 99.                                               00169499
+      *TO DEFINE DATE                                                   00169599
+       01 D1.                                                           00170099
+          05 Y PIC 99.                                                  00171099
+          05 H PIC 99.                                                  00172099
+          05 T PIC 99.                                                  00173099
+       77 TEMP PIC 99.                                                  00174099
+       77 REV  PIC 999999 VALUE ZEROS.                                  00175099
+       77 REM  PIC 9.                                                   00176099
+                                                                        00177099
+       PROCEDURE DIVISION.                                              00180000
+       A100-MAIN.                                                       00190099
+      *FIRST SORT THE SALE TRANSACTION FILE                             00190199
+            CALL 'SORT10'                                               00191099
+            PERFORM A200-PARA                                           00200052
+            CLOSE UNPROCFILE                                            00200199
+            CLOSE MASTERFL                                              00200299
+            CLOSE SALE-TRANS                                            00200588
+            CLOSE PROCFILE                                              00200699
+      *AFTER THE ESDS HAS BEEN UPDATED WITH UNPROCESSED FILE            00200799
+      *WE NEED TO UPDATE PROFIT/LOSS REPORT                             00200899
+            CALL 'REPT11'                                               00200999
+            STOP RUN.                                                   00210000
+      ***************************************************               00211056
+       A200-PARA.                                                       00267580
+      *OPEN ALL THE FILES                                               00267699
+      *KSDS IN REWRITE MODE                                             00267799
+      *PS IN WRITE MODE                                                 00267899
+      *ESDS FILE IN WRITE MODE                                          00267999
+      *PS1 IN WRITE MODE(UNPROCESSED TRANSACTION)                       00268099
+            OPEN OUTPUT UNPROCFILE                                      00268199
+            OPEN INPUT SALE-TRANS                                       00268288
+            OPEN I-O MASTERFL                                           00268399
+            WRITE OTREC FROM HD                                         00268499
+            WRITE OTREC FROM LINE1                                      00268599
+            OPEN OUTPUT PROCFILE                                        00268699
+      *CHECK SALES TRANSACTION FILE OPENING OR NOT                      00268799
+            IF WS-FS2 = 0                                               00268880
+               PERFORM A600-PARA UNTIL WS-FS2 NOT = 0                   00268999
+            ELSE                                                        00272000
+               DISPLAY 'OPEN FAILED WITH ' WS-FS2                       00280099
+            END-IF.                                                     00290048
+      ************************************************************      00291099
+       A600-PARA.                                                       00292099
+      *READ TRANSACTION FILE TILL THE END                               00292199
+            READ SALE-TRANS                                             00293099
+            NOT AT END                                                  00294099
+      *CHECK IF PET-ID IS PRESENT/INCORRECT IN TRANSACTION FILE         00294199
+              IF PID IS NUMERIC                                         00294299
+                MOVE PID TO PET-ID                                      00295099
+      *READ TRANSACTION FILE TILL THE END                               00295199
+                READ MASTERFL                                           00296099
+                   KEY IS PET-ID OF MASTERFL                            00297099
+                   INVALID KEY PERFORM A500-UNPROCESSED                 00298099
+                   NOT INVALID KEY PERFORM A200-RU                      00299099
+                END-READ                                                00299199
+              ELSE                                                      00299299
+                PERFORM A600-UNPROCESSED                                00299499
+              END-IF                                                    00299599
+            END-READ.                                                   00299699
+      ************************************************************      00300058
+       A200-RU.                                                         00301080
+      *TO CHECK IF PRICE IS PRESENT/INCORRECT IN THE TRANSACTION FILE   00301199
+           IF COS IS NUMERIC                                            00301299
+              MOVE QUAN TO M                                            00301399
+              MOVE QUANT TO V1                                          00301499
+      *TO CHECK IF QUANTITY IS PRESENT/CORRECT IN THE TRANSACTION FILE  00301599
+              IF M IS NUMERIC                                           00301699
+                 IF M > V1                                              00301799
+                    PERFORM A400-UNPROCESSED                            00301899
+                 ELSE                                                   00301999
+      *CALCULATE NEW QUANTITY FOR KSDS                                  00302099
+                    COMPUTE V2 = V1 - M                                 00302199
+                    MOVE PID TO PEID                                    00302299
+      *TO ACCEPT DATE IN YYMMDD AND CONVERT TO DDMMYY                   00302399
+                    ACCEPT D1 FROM DATE                                 00302499
+                    PERFORM REVERSE                                     00302599
+                    MOVE D1 TO DO                                       00302699
+      *CALCULATE TOTAL COST                                             00302899
+                    MOVE M TO QUA                                       00302999
+                    COMPUTE N = M * COS                                 00303099
+                    MOVE N TO TP                                        00303199
+                    MOVE V2 TO QUANT                                    00303299
+                    REWRITE REC1                                        00303399
+      *CALCULATE PROFIT MADE                                            00303499
+                    COMPUTE X = ( COS - COST) * QUAN                    00303699
+                    MOVE X TO PL                                        00304299
+                    WRITE REC3                                          00304399
+                 END-IF                                                 00304499
+              ELSE                                                      00304599
+                 PERFORM A700-UNPROCESSED                               00304699
+              END-IF                                                    00304799
+           ELSE                                                         00304899
+              PERFORM A800-UNPROCESSED                                  00304999
+           END-IF.                                                      00305099
+      ************************************************************      00306080
+      *FUNCTION TO INFORM THAT THERE ISNT ENOUGH PETS                   00307099
+       A400-UNPROCESSED.                                                00310062
+            MOVE "QUANTITY UNVAILABLE" TO N1                            00320199
+            MOVE PID TO I1                                              00320299
+            MOVE COS TO C1                                              00321099
+            MOVE QUAN TO Q1                                             00322099
+            WRITE OTREC FROM NM.                                        00330099
+      ************************************************************      00350080
+      *FUNCTION TO INFORM THAT THE PET-ID IS WRONG                      00351099
+       A500-UNPROCESSED.                                                00360080
+            MOVE "WRONG PET ID" TO N1                                   00380099
+            MOVE PID TO I1                                              00381099
+            MOVE COS TO C1                                              00382099
+            MOVE QUAN TO Q1                                             00383099
+            WRITE OTREC FROM NM.                                        00384099
+      ************************************************************      00410099
+      *FUNCTION TO INFORM THAT THE PET-ID HAS NOT BEEN ENTERED\         00411099
+       A600-UNPROCESSED.                                                00420099
+            MOVE "PET ID NOT ENTERED" TO N1                             00430099
+            MOVE PID TO I1                                              00440099
+            MOVE COS TO C1                                              00441099
+            MOVE QUAN TO Q1                                             00442099
+            WRITE OTREC FROM NM.                                        00443099
+      ************************************************************      00460099
+      *FUNCTION TO INFORM THAT THE QUANTITY HAS NOT BEEN ENTERED        00461099
+       A700-UNPROCESSED.                                                00470099
+            MOVE "QUANTITY NOT ENTERED" TO N1                           00480099
+            MOVE PID TO I1                                              00490099
+            MOVE COS TO C1                                              00491099
+            MOVE QUAN TO Q1                                             00492099
+            WRITE OTREC FROM NM.                                        00493099
+      ************************************************************      00510099
+      *FUNCTION TO INFORM THAT THE PRICE ENTERED IS WRONG               00511099
+       A800-UNPROCESSED.                                                00520099
+            MOVE "PRICE IS WRONG" TO N1                                 00530099
+            MOVE PID TO I1                                              00531099
+            MOVE COS TO C1                                              00532099
+            MOVE QUAN TO Q1                                             00533099
+            WRITE OTREC FROM NM.                                        00534099
+      ************************************************************      00550099
+      *FUNCTION TO REVERSE THE DATE                                     00551099
+       REVERSE.                                                         00560099
+            MOVE Y TO TEMP                                              00580099
+            MOVE T TO Y                                                 00590099
+            MOVE TEMP TO T.                                             00600099

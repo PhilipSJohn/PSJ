@@ -1,0 +1,30 @@
+       ID DIVISION.                                                     00010000
+       PROGRAM-ID. SORT10.                                              00020016
+       ENVIRONMENT DIVISION.                                            00030000
+       INPUT-OUTPUT SECTION.                                            00040000
+       FILE-CONTROL.                                                    00050000
+            SELECT INFL ASSIGN TO PS.                                   00060000
+            SELECT SORT-FILE ASSIGN TO SORTWK01.                        00080000
+       DATA DIVISION.                                                   00090000
+       FILE SECTION.                                                    00100000
+       FD INFL                                                          00110000
+           RECORD CONTAINS 40.                                          00120000
+       01 IN-REC PIC X(40).                                             00130000
+       SD SORT-FILE.                                                    00170000
+       01 SORT-REC.                                                     00180000
+          05 SORT-FLD PIC X(3).                                         00190006
+          05 C       PIC 9(4)V99.                                       00200003
+          05 Q       PIC 9(2).                                          00201002
+          05         PIC X(29).                                         00202002
+       PROCEDURE DIVISION.                                              00210000
+       PARA1.                                                           00220000
+             DISPLAY " IN SORTING PROGRAM "                             00221007
+             SORT SORT-FILE                                             00222000
+             ASCENDING KEY SORT-FLD                                     00223000
+             USING INFL GIVING INFL                                     00224013
+             IF SORT-RETURN = 0                                         00224108
+             DISPLAY " SORTING SUCCESSFUL "                             00224208
+             ELSE                                                       00224308
+             DISPLAY " SORTING FAILED "                                 00224408
+             END-IF                                                     00224508
+             EXIT PROGRAM.                                              00250017
